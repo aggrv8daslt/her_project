@@ -1,0 +1,5 @@
+*.pt 
+*.bin 
+*.npy 
+voice_data/ 
+snapshots/ 

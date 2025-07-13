@@ -1,0 +1,45 @@
+{
+  "birthdate": {
+    "month": "July",
+    "day": 6,
+    "year": 1978
+  },
+  "birthday": "July 6th, 1978",
+  "favorite_color": "grey and black",
+  "emotional_state": [
+    "tired",
+    "excited",
+    "tired",
+    "excited",
+    "overwhelmed",
+    "tired",
+    "excited",
+    "tired",
+    "excited",
+    "overwhelmed",
+    "happy"
+  ],
+  "name": "you",
+  "memory": {
+    "date": "4th of July",
+    "occasion": "Fireworks display",
+    "person_involved": "Neighbor (family)",
+    "emotion": "Included",
+    "duration": "a little while"
+  },
+  "date": "birth",
+  "type": "birthday",
+  "topics": [
+    "Sol",
+    "AI",
+    "friend"
+  ],
+  "people": [
+    "Solin"
+  ],
+  "timeframe": "3 or so hours",
+  "description": "4 days ago",
+  "memoryType": "inspirational quote",
+  "emotion": "joyfulness",
+  "message": "Small acts can have a great impact"
+}
