@@ -170,7 +170,15 @@ def generate(model, text, speaker_embedding, lang='a', speed=1.0, ps=None, play_
         tokens = tokens[:510]
         print("[generate] Truncated tokens to 510.")
 
+    # Take just the first style vector (you may adjust the slice later)
     ref_s = speaker_embedding
+    if ref_s.ndim == 1:
+        ref_s = ref_s.unsqueeze(0).unsqueeze(0)  # [1, 1, 256]
+    elif ref_s.ndim == 2:
+        ref_s = ref_s.unsqueeze(0)  # [1, 1, 256]
+    elif ref_s.ndim == 3 and ref_s.shape[0] != 1:
+    # if batch size is accidentally equal to token length, fix it
+        ref_s = ref_s[0].unsqueeze(0)  # take first speaker
 
     out = forward(model, tokens, ref_s, speed)
     if out is None:
