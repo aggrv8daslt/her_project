@@ -14,7 +14,7 @@ for file in os.listdir(voices_dir):
         voice_name = file[:-3]
         voice_path = os.path.join(voices_dir, file)
         voicepack[voice_name] = torch.load(voice_path, map_location="cpu")
-        print(f"Loaded voice: {voice_name}")
+        #print(f"Loaded voice: {voice_name}")
 
 default_voice = "af_bella"
 
@@ -24,7 +24,11 @@ tts = KokoroTTS(model, lang="en", speed=1.0)
 
 # === Synthesis ===
 text = "Hello world!"
-audio, phonemes = tts.synthesize(text, speaker_embedding=voicepack[default_voice])
+audio, phonemes = tts.synthesize(
+    text,
+    speaker_embedding=voicepack[default_voice]
+)
+
 
 if audio is None:
     print("[ERROR] Synthesis returned None. Something went wrong.")
