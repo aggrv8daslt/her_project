@@ -20,10 +20,21 @@ default_voice = "af_bella"
 
 # === Load Model ===
 model = KModel()  # No config provided; assumes default HF fallback or internal defaults
-tts = KokoroTTS(model, lang="en", speed=1.0)
+tts = KokoroTTS(model, lang="a", speed=1.0)
 
 # === Synthesis ===
 text = "Hello world!"
+speaker_embedding = voicepack[default_voice]
+print("Original speaker embedding shape:", speaker_embedding.shape)
+
+# Reshape if necessary
+if len(speaker_embedding.shape) == 1:
+    speaker_embedding = speaker_embedding.unsqueeze(0).unsqueeze(0)
+elif len(speaker_embedding.shape) == 2:
+    speaker_embedding = speaker_embedding.unsqueeze(0)
+
+print("Final speaker embedding shape:", speaker_embedding.shape)
+
 audio, phonemes = tts.synthesize(
     text,
     speaker_embedding=voicepack[default_voice]
