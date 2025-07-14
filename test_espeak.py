@@ -20,6 +20,7 @@ default_voice = "af_bella"
 
 # === Load Model ===
 model = KModel()  # No config provided; assumes default HF fallback or internal defaults
+print("DEBUG: Embedding shape:", voicepack[default_voice].shape)
 tts = KokoroTTS(model, lang="a", speed=1.0)
 
 # === Synthesis ===
