@@ -2,6 +2,8 @@ import phonemizer
 import re
 import torch
 import numpy as np
+import sounddevice as sd
+from scipy.io.wavfile import write
 
 def split_num(num):
     num = num.group()
@@ -91,20 +93,33 @@ phonemizers = dict(
     a=phonemizer.backend.EspeakBackend(language='en-us', preserve_punctuation=True, with_stress=True),
     b=phonemizer.backend.EspeakBackend(language='en-gb', preserve_punctuation=True, with_stress=True),
 )
-def my_phonemize(text, lang, norm=True):
+def phonemize(text, lang, norm=True):
     if norm:
         text = normalize_text(text)
+
+    # Make sure language key exists
+    if lang not in phonemizers:
+        raise ValueError(f"Language '{lang}' not supported. Available: {list(phonemizers.keys())}")
+
     ps = phonemizers[lang].phonemize([text])
     ps = ps[0] if ps else ''
-    # https://en.wiktionary.org/wiki/kokoro#English
+
+    if not isinstance(ps, str):
+        raise ValueError(f"Phonemizer did not return a string. Got: {type(ps)}")
+
+    # Manual phoneme replacements
     ps = ps.replace('kəkˈoːɹoʊ', 'kˈoʊkəɹoʊ').replace('kəkˈɔːɹəʊ', 'kˈəʊkəɹəʊ')
     ps = ps.replace('ʲ', 'j').replace('r', 'ɹ').replace('x', 'k').replace('ɬ', 'l')
     ps = re.sub(r'(?<=[a-zɹː])(?=hˈʌndɹɪd)', ' ', ps)
     ps = re.sub(r' z(?=[;:,.!?¡¿—…"«»“” ]|$)', 'z', ps)
-    if lang == 'a':
+    
+    if lang == 'a':  # American
         ps = re.sub(r'(?<=nˈaɪn)ti(?!ː)', 'di', ps)
+
+    # Filter to valid characters only
     ps = ''.join(filter(lambda p: p in VOCAB, ps))
     return ps.strip()
+
 
 def length_to_mask(lengths):
     mask = torch.arange(lengths.max()).unsqueeze(0).expand(lengths.shape[0], -1).type_as(lengths)
@@ -136,13 +151,14 @@ def forward(model, tokens, ref_s, speed):
     asr = t_en @ pred_aln_trg.unsqueeze(0).to(device)
     return model.decoder(asr, F0_pred, N_pred, ref_s[:, :128]).squeeze().cpu().numpy()
 
-def generate(model, text, speaker_embedding, lang='a', speed=1, ps=None):
-    if ps is None:
-        print(f"[DEBUG] phonemize() is: {phonemize.__module__}.{phonemize.__name__}")
-        print(f"[DEBUG] phonemize source: {inspect.getfile(phonemize)}")
-        ps = my_phonemize(text, lang)
-    print(f"[generate] Phonemes: {ps}")
+def generate(model, text, speaker_embedding, lang='a', speed=1.0, ps=None, play_audio=True, return_wav=False):
+    print(f"[DEBUG] synthesize() received ps type: {type(ps)}")
 
+    if ps is None:
+        print("[DEBUG] No ps provided; running phonemize()")
+        ps = phonemize(text, lang)
+
+    print(f"[generate] Phonemes: {ps}")
     tokens = tokenize(ps)
     print(f"[generate] Tokens: {tokens}")
 
@@ -152,22 +168,32 @@ def generate(model, text, speaker_embedding, lang='a', speed=1, ps=None):
 
     if len(tokens) > 510:
         tokens = tokens[:510]
-        print('[generate] Truncated to 510 tokens')
+        print("[generate] Truncated tokens to 510.")
 
     ref_s = speaker_embedding
-    out = forward(model, tokens, ref_s, speed)
 
+    out = forward(model, tokens, ref_s, speed)
     if out is None:
         print("[generate] Forward model returned None!")
         return None, None
 
-    try:
-        ps = ''.join(next(k for k, v in VOCAB.items() if i == v) for i in tokens)
-    except Exception as e:
-        print(f"[generate] Error decoding phonemes: {e}")
-        ps = ""
+    audio = out['wav']  # Should be a 1D numpy array
+    if isinstance(audio, torch.Tensor):
+        audio = audio.squeeze().cpu().numpy()
 
-    return out, ps
+    # Normalize to avoid clipping
+    audio = audio / np.max(np.abs(audio))
+
+    if play_audio:
+        print("[generate] Playing audio through system output.")
+        sd.play(audio, samplerate=24000)
+        sd.wait()
+
+    if return_wav:
+        write("output.wav", 24000, (audio * 32767).astype(np.int16))
+        print("[generate] Saved output.wav")
+
+    return audio, ps
 
 
 
