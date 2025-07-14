@@ -35,10 +35,13 @@ elif len(speaker_embedding.shape) == 2:
     speaker_embedding = speaker_embedding.unsqueeze(0)
 
 print("Final speaker embedding shape:", speaker_embedding.shape)
+print(f"[DEBUG] voicepack[default_voice] shape: {voicepack[default_voice].shape}")
+print(f"[DEBUG] Raw speaker embedding shape: {voicepack[default_voice].shape}")
 
 audio, phonemes = tts.synthesize(
     text,
-    speaker_embedding=voicepack[default_voice]
+    speaker_embedding = voicepack[default_voice][0].unsqueeze(0)  # → [1, 1, 256]
+
 )
 
 
